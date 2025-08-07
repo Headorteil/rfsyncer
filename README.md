@@ -38,8 +38,8 @@ With rfsyncer, everything is templatized.
 
 Config file is specified with the `--config`.
 
-`env` is populated with env vars (`./.env` file is automatically loaded)
-`flag` is populated with the content of `--flag`
+- `env` is populated with env vars (`./.env` file is automatically loaded)
+- `flag` is populated with the content of `--flag`
 
 That gives us this kind of config file :
 ```yaml
@@ -63,14 +63,14 @@ hosts:
 
 ## .rfsyncer files
 
-To customize the default behaviour on a specific file, you can create a .rfsyncer in the dame dir as it.
+To customize the default behaviour on a specific file, you can create a `<file_name>.rfsyncer` in the same dir as it.
 
 For example, if you want to customize `root/etc/hosts`, create `root/etc/hosts.rfsyncer`
 
-`general` is populated with the general section of the config
-`general.flag` is populated with the content of `--flag`
-`general.env` is populated with env vars (`./.env` file is automatically loaded)
-`host` is populated with the corresponding host section of the config with some additions :
+- `general` is populated with the general section of the config
+- `general.flag` is populated with the content of `--flag`
+- `general.env` is populated with env vars (`./.env` file is automatically loaded)
+- `host` is populated with the corresponding host section of the config with some additions :
   - `real_hostname` is the output of `$ hostname`
 
 That gives us this kind of .rfsyncer file :
@@ -90,10 +90,10 @@ name: dir-{{ host.host_key2 }} # If provided, will replace the original name of 
 
 When templating is enabled for a file, jinja2 templating is applied to it.
 
-`general` is populated with the general section of the config
-`general.flag` is populated with the content of `--flag`
-`general.env` is populated with env vars (`./.env` file is automatically loaded)
-`host` is populated with the corresponding host section of the config with some additions :
+- `general` is populated with the general section of the config
+- `general.flag` is populated with the content of `--flag`
+- `general.env` is populated with env vars (`./.env` file is automatically loaded)
+- `host` is populated with the corresponding host section of the config with some additions :
   - `real_hostname` is the output of `$ hostname`
 
 For example :
@@ -241,9 +241,9 @@ $ rfsyncer clear -h
 
 # Good to know
 
-The only file type which are handled are `normal files` and `directories`
+The only file types which are handled are `normal files` and `directories`
 
-When a file (or directory) already exist and its content is the same, it will be skipped even if its mode, owner or group are different.
+When a file (or directory) already exist on the remote host and its content is the same, it will be skipped even if its mode, owner or group are different.
 
 When a file is created or uploaded, its owner and group will be the ones of the ssh user or root if sudo is specified.
 
