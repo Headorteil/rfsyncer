@@ -29,7 +29,8 @@ Rfsyncer offers the possibility to use jinja2 as a templating engine if needed.
 Pre-hooks are availible to offer more templating possibilities.
 
 > [!CAUTION]
-> Pre-hooks are run even with the diff command. They should not modify the system
+> Pre-hooks are run even with the diff command. They should not modify the system.
+>
 > Post-hooks are run only with the install command.
 
 # Installation
