@@ -9,6 +9,7 @@ from rich.panel import Panel
 from rich.progress import Progress
 from rich.syntax import Syntax
 from rich.text import Text
+from rich.traceback import Traceback
 
 from rfsyncer.util.consts import (
     HOST_COLOR,
@@ -120,7 +121,7 @@ def mp_log(
     hostname: str | None,
     message: str,
     *args: Any,  # noqa: ANN401
-    stop: bool = False,
+    exception: Traceback | None = None,
 ) -> None:
     if hostname:
         queue.put(
@@ -129,7 +130,7 @@ def mp_log(
                 "level": level,
                 "message": f"[%s %s@%s] {message}",
                 "args": [host, user, hostname, *args],
-                "stop": stop,
+                "exception": exception,
             },
         )
         return
@@ -139,6 +140,6 @@ def mp_log(
             "level": level,
             "message": f"[%s] {message}",
             "args": [host, *args],
-            "stop": stop,
+            "exception": exception,
         },
     )

@@ -55,8 +55,10 @@ class Syncer:
                     elem["message"],
                     *elem["args"],
                 )
-                if elem["stop"]:
+                if elem["exception"]:
                     self.stop = True
+                    if self.display.debug:
+                        self.display.console.print(elem["exception"])
             case "print":
                 printable = elem["text"]
                 if isinstance(printable, Panel) and not self.display.display:

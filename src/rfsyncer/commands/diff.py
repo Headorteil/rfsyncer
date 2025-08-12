@@ -16,6 +16,7 @@ from rich.progress import TaskID
 from rich.rule import Rule
 from rich.syntax import Syntax
 from rich.text import Text
+from rich.traceback import Traceback
 
 from rfsyncer.commands.ping import ping
 from rfsyncer.util.config import RfsyncerConfig
@@ -181,6 +182,7 @@ class DiffApp:
                     Syntax(
                         f"Stdout :\n{stdout}\nStderr :\n{stderr}",
                         "text",
+                        line_numbers=True,
                         word_wrap=True,
                     ),
                 ),
@@ -273,6 +275,7 @@ class DiffApp:
                     Syntax(
                         f"Stdout :\n{stdout}\nStderr :\n{stderr}",
                         "text",
+                        line_numbers=True,
                         word_wrap=True,
                     ),
                 ),
@@ -320,9 +323,8 @@ class DiffApp:
             mp_log(
                 logging.ERROR,
                 *self.print_infos,
-                "Error : %s",
                 str(e),
-                stop=True,
+                exception=Traceback(show_locals=True),
             )
         finally:
             if not self.keep:

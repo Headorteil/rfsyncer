@@ -4,6 +4,8 @@ from multiprocessing.queues import Queue as QueueType
 from shlex import quote
 from typing import Any
 
+from rich.traceback import Traceback
+
 from rfsyncer.commands.ping import ping
 from rfsyncer.ssh.connector import Connector
 from rfsyncer.util.config import RfsyncerConfig
@@ -73,7 +75,6 @@ def clear(
         mp_log(
             logging.ERROR,
             *print_infos,
-            "Error : %s",
             str(e),
-            stop=True,
+            exception=Traceback(show_locals=True),
         )

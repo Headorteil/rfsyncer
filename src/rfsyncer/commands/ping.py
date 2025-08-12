@@ -3,6 +3,8 @@ from multiprocessing import Semaphore
 from multiprocessing.queues import Queue as QueueType
 from typing import Any
 
+from rich.traceback import Traceback
+
 from rfsyncer.ssh.connector import Connector
 from rfsyncer.util.config import RfsyncerConfig
 from rfsyncer.util.display import mp_log
@@ -58,8 +60,7 @@ def ping(
         mp_log(  # pyright: ignore[reportArgumentType]
             logging.ERROR,
             *print_infos,
-            "Error : %s",
             str(e),
-            stop=True,
+            exception=Traceback(show_locals=True),
         )
         return None
