@@ -17,7 +17,7 @@ PROGRESS_WIDGETS = [
 ]
 
 DEFAULT_TOOL_DIR = Path.home().resolve() / ".rfsyncer"
-DEFAULT_CONFIG_FILE = DEFAULT_TOOL_DIR / "config.yml"
+DEFAULT_CONFIG_FILE = Path("./config.yml")
 APP_PATH = Path(__file__).parent.parent
 
 DEFAULT_LOG_DIR = DEFAULT_TOOL_DIR / "logs"

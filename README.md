@@ -198,7 +198,7 @@ $ rfsyncer -h
 
 
 ╭─ Options ───────────────────────────────────────────────────────────────────────────────────────────╮
-│ --config              -c      PATH     Config path [default: /home/headorteil/.rfsyncer/config.yml] │
+│ --config              -c      PATH     Config path [default: config.yml]                            │
 │ --processes           -p      INTEGER  Number of processes to pop [default: 4]                      │
 │ --flag                -f      TEXT     json to pass to templating engines                           │
 │ --version             -V               Print the tool version                                       │
