@@ -1,6 +1,6 @@
 [project]
 name = "rfsyncer"
-version = "0.0.1"
+version = "0.0.2"
 description = "A symple tool to make diffs and synchronize file trees."
 readme = "README.md"
 authors = [

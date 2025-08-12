@@ -11,7 +11,7 @@ from rfsyncer.util.consts import (
     ASKPASS_PATH,
     REMOTE_TEMP_DIR,
 )
-from rfsyncer.util.multithreading import mp_log
+from rfsyncer.util.display import mp_log
 
 
 def clear(

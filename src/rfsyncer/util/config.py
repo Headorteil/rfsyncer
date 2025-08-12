@@ -4,7 +4,7 @@ from logging import Logger
 from pathlib import Path
 
 from dotenv import load_dotenv
-from jinja2 import DictLoader, Environment
+from jinja2 import Environment
 from yaml import safe_load
 
 from rfsyncer.util.consts import (
@@ -41,8 +41,8 @@ class RfsyncerConfig:
         """Return the config."""
 
         if self.config_path.is_file():
-            env = Environment(loader=DictLoader({"conf": self.config_path.read_text()}))  # noqa: S701
-            template = env.get_template("conf")
+            env = Environment()  # noqa: S701
+            template = env.from_string(self.config_path.read_text())
             template_out = template.render(env=self.env, flag=self.flag)
 
             raw_config = safe_load(template_out)

@@ -5,8 +5,8 @@ from typing import Any
 
 from rfsyncer.ssh.connector import Connector
 from rfsyncer.util.config import RfsyncerConfig
+from rfsyncer.util.display import mp_log
 from rfsyncer.util.exceptions import HandledError
-from rfsyncer.util.multithreading import mp_log
 
 
 def ping(

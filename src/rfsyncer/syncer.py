@@ -46,7 +46,7 @@ class Syncer:
             if host_dict.get("enabled", True):
                 self.default_hosts.append(host)
 
-    def print_loop(self, queue: QueueType[Any]) -> None:
+    def queue_loop(self, queue: QueueType[Any]) -> None:
         elem = queue.get()
         match elem["type"]:
             case "log":
@@ -94,7 +94,7 @@ class Syncer:
             )
             with Manager() as manager:
                 progress_ = manager.dict()
-                print_queue = Queue()
+                queue = Queue()
                 return_dict = manager.dict()
 
                 for args, kwargs in zip(args_list, kwargs_list, strict=True):  # pyright: ignore[reportArgumentType]
@@ -112,7 +112,7 @@ class Syncer:
                             args=(
                                 self.config,
                                 self.semaphore,
-                                print_queue,
+                                queue,
                                 *args,
                             ),
                             kwargs={
@@ -129,8 +129,8 @@ class Syncer:
                 while (
                     n_finished := sum([not process.is_alive() for process in processes])
                 ) < len(processes):
-                    while not print_queue.empty():
-                        self.print_loop(print_queue)
+                    while not queue.empty():
+                        self.queue_loop(queue)
 
                     if self.stop:
                         self.display.logger.error("SIGINT catched, terminate processes")
@@ -177,8 +177,8 @@ class Syncer:
                 for process in processes:
                     process.join()
 
-                while not print_queue.empty():
-                    self.print_loop(print_queue)
+                while not queue.empty():
+                    self.queue_loop(queue)
 
                 to_return = deepcopy(return_dict)
 

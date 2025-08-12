@@ -11,7 +11,9 @@ from typing import TYPE_CHECKING, Any
 
 import yaml
 from jinja2 import Environment, FileSystemLoader
+from rich.console import Group
 from rich.progress import TaskID
+from rich.rule import Rule
 from rich.syntax import Syntax
 from rich.text import Text
 
@@ -24,9 +26,9 @@ from rfsyncer.util.consts import (
     REMOTE_TEMP_DIR,
     RFSYNCER_PREFIX,
 )
+from rfsyncer.util.display import mp_log, mp_print
 from rfsyncer.util.exceptions import HandledError
 from rfsyncer.util.hash import hash_
-from rfsyncer.util.multithreading import mp_log, mp_print
 from rfsyncer.util.types import FileFuture, map_file_color
 
 if TYPE_CHECKING:
@@ -43,7 +45,7 @@ class DiffApp:
         self,
         config: RfsyncerConfig,
         semaphore: Semaphore,  # pyright: ignore[reportInvalidTypeForm, reportUnknownParameterType]
-        print_queue: QueueType[Any],
+        queue: QueueType[Any],
         host: str,
         insecure: bool,
         root: Path,
@@ -58,7 +60,7 @@ class DiffApp:
     ) -> None:
         self.semaphore = semaphore
         self.return_dict = return_dict
-        self.print_queue = print_queue
+        self.queue = queue
 
         self.config = config
         self.general_config = config.general
@@ -77,12 +79,13 @@ class DiffApp:
         self.file_task = file_task
 
         self.jinja_env = Environment(loader=FileSystemLoader(self.root.parent))  # noqa: S701
+        self.hook = {}
 
     def connect(self) -> None:
         self.connector = ping(
             self.config,
             self.semaphore,
-            self.print_queue,
+            self.queue,
             self.host,
             self.insecure,
             sudo=self.sudo,
@@ -101,13 +104,175 @@ class DiffApp:
         self.hostname = self.host_config["hostname"]
 
         self.print_infos = (
-            self.print_queue,
+            self.queue,
             self.hostname,
             self.user,
             self.real_hostname,
         )
         self.host_log = f"{self.hostname} {self.user}@{self.real_hostname}"
         self.host_log_colored = (self.host_log, HOST_COLOR)
+
+    def pre_hooks(self, local_tmpdir: str) -> dict[str, dict[str, str]]:
+        to_return = {}
+
+        hooks = self.general_config.get("pre_hooks", [])
+        hooks += self.host_config.get("pre_hooks", [])
+
+        env = Environment()  # noqa: S701
+        tmpdir_path = Path(local_tmpdir)
+        for hook in hooks:
+            hook_path = Path(hook.get("path"))
+            hook_name = hook.get("name")
+            if not hook_path or not hook_name:
+                errmsg = "Evry hook must have a 'path' and 'name' field"
+                raise HandledError(errmsg)
+
+            template = env.from_string(Path(hook_path).read_text())
+            template_out = template.render(
+                host=self.host_config, general=self.general_config
+            )
+
+            local_hook = tmpdir_path / hook_path.name
+            local_hook.write_text(template_out)
+            remote_hook = REMOTE_TEMP_DIR / hook_path.name
+
+            mp_log(
+                logging.INFO,
+                *self.print_infos,
+                "Uploading pre hook %s",
+                hook_name,
+            )
+
+            def callback(transferred: int, total: int) -> None:
+                self.progress[self.file_task] = {
+                    "progress": transferred,
+                    "total": total,
+                    "description": Text.assemble(
+                        "[",
+                        self.host_log_colored,
+                        f"] Uploading pre hook {hook_name}",  # noqa: B023
+                    ),
+                }
+
+            self.sftp.put(
+                str(local_hook),
+                str(remote_hook),
+                callback=callback,
+            )
+
+            stdout, stderr = self.connector.exec(f"sh {quote(str(remote_hook))}")
+            to_return[hook_name] = {"stdout": stdout, "stderr": stderr}
+            mp_print(
+                *self.print_infos,
+                Group(
+                    Syntax(
+                        template_out,
+                        "bash",
+                        line_numbers=True,
+                        word_wrap=True,
+                    ),
+                    Rule(title="Results"),
+                    Syntax(
+                        f"Stdout :\n{stdout}\nStderr :\n{stderr}",
+                        "text",
+                        word_wrap=True,
+                    ),
+                ),
+                panel=True,
+                subtitle=f"Pre hook {hook_name}",
+            )
+        return to_return
+
+    def post_hooks(self, local_tmpdir: str, return_paths: dict[str, Any]) -> None:
+        hooks = self.general_config.get("post_hooks", [])
+        hooks += self.host_config.get("post_hooks", [])
+
+        paths = {}
+        for l_path, path_dict in return_paths.items():
+            paths[str(l_path)] = {
+                "remote_path": str(path_dict["r_path"]),
+                "state": str(path_dict["future"]),
+            }
+
+        env = Environment()  # noqa: S701
+        tmpdir_path = Path(local_tmpdir)
+        for hook in hooks:
+            hook_path = Path(hook.get("path"))
+            hook_name = hook.get("name")
+            if not hook_path or not hook_name:
+                errmsg = "Evry hook must have a 'path' and 'name' field"
+                raise HandledError(errmsg)
+
+            template = env.from_string(Path(hook_path).read_text())
+            template_out = template.render(
+                host=self.host_config,
+                general=self.general_config,
+                hook=self.hook,
+                paths=paths,
+            )
+
+            if not self.install:
+                mp_print(
+                    *self.print_infos,
+                    Syntax(
+                        template_out,
+                        "bash",
+                        line_numbers=True,
+                        word_wrap=True,
+                    ),
+                    panel=True,
+                    subtitle=f"Post hook {hook_name}",
+                )
+                continue
+
+            local_hook = tmpdir_path / hook_path.name
+            local_hook.write_text(template_out)
+            remote_hook = REMOTE_TEMP_DIR / hook_path.name
+
+            mp_log(
+                logging.INFO,
+                *self.print_infos,
+                "Uploading post hook %s",
+                hook_name,
+            )
+
+            def callback(transferred: int, total: int) -> None:
+                self.progress[self.file_task] = {
+                    "progress": transferred,
+                    "total": total,
+                    "description": Text.assemble(
+                        "[",
+                        self.host_log_colored,
+                        f"] Uploading post hook {hook_name}",  # noqa: B023
+                    ),
+                }
+
+            self.sftp.put(
+                str(local_hook),
+                str(remote_hook),
+                callback=callback,
+            )
+
+            stdout, stderr = self.connector.exec(f"sh {quote(str(remote_hook))}")
+            mp_print(
+                *self.print_infos,
+                Group(
+                    Syntax(
+                        template_out,
+                        "bash",
+                        line_numbers=True,
+                        word_wrap=True,
+                    ),
+                    Rule(title="Results"),
+                    Syntax(
+                        f"Stdout :\n{stdout}\nStderr :\n{stderr}",
+                        "text",
+                        word_wrap=True,
+                    ),
+                ),
+                panel=True,
+                subtitle=f"Results for post hook {hook_name}",
+            )
 
     def __call__(self) -> None:
         try:
@@ -134,8 +299,10 @@ class DiffApp:
             with TemporaryDirectory(
                 prefix=f"rfsyncer_{self.hostname}_"
             ) as local_tmpdir:
+                self.hook = self.pre_hooks(local_tmpdir)
                 for i, (path, path_dict) in enumerate(tree.items()):
                     return_paths[path] = self.diff_file(i, path_dict, local_tmpdir)
+                self.post_hooks(local_tmpdir, return_paths)
 
             self.return_dict[self.host] = {
                 "real_hostname": self.real_hostname,
@@ -171,7 +338,9 @@ class DiffApp:
             real_local_path = path_dict["l_path"]
             template = self.jinja_env.get_template(str(real_local_path))
             template_out = template.render(
-                host=self.host_config, general=self.general_config
+                host=self.host_config,
+                general=self.general_config,
+                hook=self.hook,
             )
             local_path = Path(local_tmpdir) / real_local_path.name
             local_path.write_text(template_out)
@@ -550,7 +719,9 @@ class DiffApp:
             if conf_file.is_file():
                 template = self.jinja_env.get_template(str(conf_file))
                 template_out = template.render(
-                    host=self.host_config, general=self.general_config
+                    host=self.host_config,
+                    general=self.general_config,
+                    hook=self.hook,
                 )
                 file_config.update(yaml.safe_load(template_out))
 
@@ -642,15 +813,6 @@ class DiffApp:
             str(temp_dest_path),
             callback=callback,
         )
-        self.progress[self.file_task] = {
-            "progress": l_size,
-            "total": l_size,
-            "description": Text.assemble(
-                "[",
-                self.host_log_colored,
-                f"] Uploading {dest_path}",
-            ),
-        }
         return temp_dest_path
 
     def hash_and_log(

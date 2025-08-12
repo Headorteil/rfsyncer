@@ -26,6 +26,12 @@ By using `rfsyncer diff --hosts user@1.2.3.4 --hosts MyHost --root ./root`, rfsy
 
 Rfsyncer offers the possibility to use jinja2 as a templating engine if needed.
 
+Pre-hooks are availible to offer more templating possibilities.
+
+> [!CAUTION]
+> Pre-hooks are run even with the diff command. They should not modify the system
+> Post-hooks are run only with the install command.
+
 # Installation
 
 `uv tool install git+https://github.com/Headorteil/rfsyncer.git`
@@ -45,11 +51,17 @@ That gives us this kind of config file :
 ```yaml
 general:
   key1: value1 # Arbitrary keys to template files for all hosts
+  pre_hooks:
+    - name: test
+      path: ./hooks/test.sh
 
 hosts:
   host1:
-  sudo: true # Use sudo to install files as root and be able to read them when in diff mode (default : false)
+    sudo: true # Use sudo to install files as root and be able to read them when in diff mode (default : false)
     password: {{ env.HOST1_PASSWORD }} # Needed to use sudo
+    pre_hooks:
+      - name: test-host1
+        path: ./hooks/test-host1.sh
   host2:
     enabled: {{ flag.host2.enabled }} # Enable or disable host
     hostname: 1.2.3.4 # IP or domain of the remote host
@@ -72,6 +84,7 @@ For example, if you want to customize `root/etc/hosts`, create `root/etc/hosts.r
 - `general.env` is populated with env vars (`./.env` file is automatically loaded)
 - `host` is populated with the corresponding host section of the config with some additions :
   - `real_hostname` is the output of `$ hostname`
+- `hook` is populated with the results of pre-hooks
 
 That gives us this kind of .rfsyncer file :
 ```yaml
@@ -95,6 +108,7 @@ When templating is enabled for a file, jinja2 templating is applied to it.
 - `general.env` is populated with env vars (`./.env` file is automatically loaded)
 - `host` is populated with the corresponding host section of the config with some additions :
   - `real_hostname` is the output of `$ hostname`
+- `hook` is populated with the results of pre-hooks
 
 For example :
 
@@ -104,6 +118,70 @@ Hello {{ general.env.ENV_VAR }}
 {{ general.key1 }}
 {{ host.real_hostname }}
 {% if general.key1 %}Yipee{% endif %}
+The hook stderr was {{ hook.test.stderr }}
+```
+
+## Hooks files
+
+### Pre hooks
+
+They are bash scripts which are run on the remote hosts before the diff or the install.
+
+General hooks are run before hosts specific hooks.
+
+The hook adds fields to `.rfsyncer` and normal files with `hook.<hook name>.stdout` and `hook.<hook name>.stderr`
+
+The pre hooks are templatized withe the following values :
+
+- `general` is populated with the general section of the config
+- `general.flag` is populated with the content of `--flag`
+- `general.env` is populated with env vars (`./.env` file is automatically loaded)
+- `host` is populated with the corresponding host section of the config with some additions :
+  - `real_hostname` is the output of `$ hostname`
+
+For example :
+
+```jinja2
+{% if host.real_hostname == "zozo" %}
+uname -m
+{% endif %}
+```
+
+### Post hooks
+
+They are bash scripts which are run on the remote hosts after the diff and the install.
+
+General hooks are run before hosts specific hooks.
+
+The post hooks are templatized withe the following values :
+
+- `general` is populated with the general section of the config
+- `general.flag` is populated with the content of `--flag`
+- `general.env` is populated with env vars (`./.env` file is automatically loaded)
+- `host` is populated with the corresponding host section of the config with some additions :
+  - `real_hostname` is the output of `$ hostname`
+- `hook` is populated with the results of pre-hooks
+- `paths` is populated with the results of the diff
+
+`paths` variable has the following form :
+```json
+{
+  "<local path relative to the root flag>":
+    {
+      "state": "<create|update|keep|error>",
+      "remote_path": "<absolute remote path>"
+    }
+}
+```
+
+An example of a post hook would be :
+
+```jinja2
+{% if paths["etc/hosts"].state == "update" %}
+reboot
+{% else %}
+echo Nothing to do on {{ host.real_hostname }}
+{% endif %}
 ```
 
 # Usage
