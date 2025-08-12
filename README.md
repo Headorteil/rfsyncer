@@ -35,7 +35,9 @@ Pre-hooks are availible to offer more templating possibilities.
 
 # Installation
 
-`uv tool install git+https://github.com/Headorteil/rfsyncer.git`
+- `uv tool install rfsyncer`
+- `pipx install rfsyncer`
+- `pip install rfsyncer`
 
 # Configuration
 
