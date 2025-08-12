@@ -35,17 +35,17 @@ if TYPE_CHECKING:
     from paramiko.sftp_client import SFTPClient
 
 
-def diff_proxy(*args: Any, **kwargs: Any) -> None:  # noqa: ANN401
-    diff = DiffApp(*args, **kwargs)
-    return diff()
+def diff_proxy(queue: QueueType[Any], *args: Any, **kwargs: Any) -> None:  # noqa: ANN401
+    diff = DiffApp(queue, *args, **kwargs)
+    diff()
 
 
 class DiffApp:
     def __init__(
         self,
+        queue: QueueType[Any],
         config: RfsyncerConfig,
         semaphore: Semaphore,  # pyright: ignore[reportInvalidTypeForm, reportUnknownParameterType]
-        queue: QueueType[Any],
         host: str,
         insecure: bool,
         root: Path,
@@ -80,12 +80,18 @@ class DiffApp:
 
         self.jinja_env = Environment(loader=FileSystemLoader(self.root.parent))  # noqa: S701
         self.hook = {}
+        self.print_infos = (
+            self.queue,
+            self.host,
+            None,
+            None,
+        )
 
     def connect(self) -> None:
         self.connector = ping(
+            self.queue,
             self.config,
             self.semaphore,
-            self.queue,
             self.host,
             self.insecure,
             sudo=self.sudo,
@@ -162,7 +168,7 @@ class DiffApp:
 
             stdout, stderr = self.connector.exec(f"sh {quote(str(remote_hook))}")
             to_return[hook_name] = {"stdout": stdout, "stderr": stderr}
-            mp_print(
+            mp_print(  # pyright: ignore[reportArgumentType]
                 *self.print_infos,
                 Group(
                     Syntax(
@@ -212,7 +218,7 @@ class DiffApp:
             )
 
             if not self.install:
-                mp_print(
+                mp_print(  # pyright: ignore[reportArgumentType]
                     *self.print_infos,
                     Syntax(
                         template_out,
@@ -254,7 +260,7 @@ class DiffApp:
             )
 
             stdout, stderr = self.connector.exec(f"sh {quote(str(remote_hook))}")
-            mp_print(
+            mp_print(  # pyright: ignore[reportArgumentType]
                 *self.print_infos,
                 Group(
                     Syntax(
@@ -310,6 +316,14 @@ class DiffApp:
                 "user": self.user,
                 "paths": return_paths,
             }
+        except Exception as e:  # noqa: BLE001
+            mp_log(
+                logging.ERROR,
+                *self.print_infos,
+                "Error : %s",
+                str(e),
+                stop=True,
+            )
         finally:
             if not self.keep:
                 with contextlib.suppress(Exception):
@@ -390,7 +404,7 @@ class DiffApp:
                 if l_type == "directory":
                     future = FileFuture.CREATE
                     if not self.install:
-                        mp_print(
+                        mp_print(  # pyright: ignore[reportArgumentType]
                             *self.print_infos,
                             Text.assemble(
                                 "directory ",
@@ -434,7 +448,7 @@ class DiffApp:
                 except UnicodeDecodeError:
                     future = FileFuture.CREATE
                     if not self.install:
-                        mp_print(
+                        mp_print(  # pyright: ignore[reportArgumentType]
                             *self.print_infos,
                             Text.assemble(
                                 "file (binary) ",
@@ -467,7 +481,7 @@ class DiffApp:
                             " will be ",
                             ("created", f"{map_file_color(future)} bold"),
                         )
-                    mp_print(
+                    mp_print(  # pyright: ignore[reportArgumentType]
                         *self.print_infos,
                         Syntax(
                             local_content,
@@ -491,7 +505,7 @@ class DiffApp:
                     return {"r_path": dest_path, "future": future}
                 future = FileFuture.CREATE
                 if not self.install:
-                    mp_print(
+                    mp_print(  # pyright: ignore[reportArgumentType]
                         *self.print_infos,
                         Text.assemble(
                             "file (empty) ",
@@ -582,7 +596,7 @@ class DiffApp:
                         dest_path,
                     )
                     if not self.install:
-                        mp_print(
+                        mp_print(  # pyright: ignore[reportArgumentType]
                             *self.print_infos,
                             Text.assemble(
                                 "file ",
@@ -629,7 +643,7 @@ class DiffApp:
                         dest_path,
                     )
                     if not self.install:
-                        mp_print(
+                        mp_print(  # pyright: ignore[reportArgumentType]
                             *self.print_infos,
                             Text.assemble(
                                 "file ",
@@ -688,7 +702,7 @@ class DiffApp:
                     " will be ",
                     ("updated", f"{map_file_color(future)} bold"),
                 )
-            mp_print(
+            mp_print(  # pyright: ignore[reportArgumentType]
                 *self.print_infos,
                 Syntax(diff, "diff", line_numbers=True, word_wrap=True),
                 panel=True,
@@ -900,7 +914,7 @@ class DiffApp:
                     case _:
                         raise NotImplementedError
 
-                mp_print(
+                mp_print(  # pyright: ignore[reportArgumentType]
                     *self.print_infos,
                     Text.assemble(
                         "file ",

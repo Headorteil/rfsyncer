@@ -55,6 +55,8 @@ class Syncer:
                     elem["message"],
                     *elem["args"],
                 )
+                if elem["stop"]:
+                    self.stop = True
             case "print":
                 printable = elem["text"]
                 if isinstance(printable, Panel) and not self.display.display:
@@ -110,9 +112,9 @@ class Syncer:
                         Process(
                             target=func,
                             args=(
+                                queue,
                                 self.config,
                                 self.semaphore,
-                                queue,
                                 *args,
                             ),
                             kwargs={
@@ -133,7 +135,7 @@ class Syncer:
                         self.queue_loop(queue)
 
                     if self.stop:
-                        self.display.logger.error("SIGINT catched, terminate processes")
+                        self.display.logger.error("Terminate processes")
                         self.display.progress.remove_task(
                             global_task,
                         )

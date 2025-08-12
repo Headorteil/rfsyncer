@@ -116,10 +116,11 @@ def mp_log(
     level: int,
     queue: Queue[Any],
     host: str,
-    user: str,
+    user: str | None,
     hostname: str | None,
     message: str,
     *args: Any,  # noqa: ANN401
+    stop: bool = False,
 ) -> None:
     if hostname:
         queue.put(
@@ -128,6 +129,7 @@ def mp_log(
                 "level": level,
                 "message": f"[%s %s@%s] {message}",
                 "args": [host, user, hostname, *args],
+                "stop": stop,
             },
         )
         return
@@ -135,7 +137,8 @@ def mp_log(
         {
             "type": "log",
             "level": level,
-            "message": f"[%s@%s] {message}",
-            "args": [user, host, *args],
+            "message": f"[%s] {message}",
+            "args": [host, *args],
+            "stop": stop,
         },
     )
