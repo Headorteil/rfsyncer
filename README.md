@@ -329,3 +329,16 @@ When a file (or directory) already exist on the remote host and its content is t
 When a file is created or uploaded, its owner and group will be the ones of the ssh user or root if sudo is specified.
 
 Diffs are skipped for binary files and files heavier than 10Mo.
+
+The remote system is expected to hawe a working ssh server running and supports sftp.
+
+Some binaries are expected to existe on the remote hosts (they are already here on most distributions):
+- cat
+- diff
+- hostname (can back off to `cat /proc/sys/kernel/hostname`)
+- install
+- md5sum
+- mkdir
+- rm
+- sh
+- stat

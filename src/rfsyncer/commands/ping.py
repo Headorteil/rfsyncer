@@ -37,6 +37,16 @@ def ping(
 
             if stderr:
                 mp_log(
+                    logging.WARNING,
+                    *print_infos,
+                    "Execution error while executing 'hostname' (%s), "
+                    "backing off to cat /proc/sys/kernel/hostname",
+                    stderr,
+                )
+                stdout, stderr = ssh.exec("cat /proc/sys/kernel/hostname")
+
+            if stderr:
+                mp_log(
                     logging.ERROR,
                     *print_infos,
                     "Aborting target : Execution error (%s)",
