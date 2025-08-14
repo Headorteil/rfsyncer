@@ -365,7 +365,10 @@ class DiffApp:
         dest_path = path_dict["r_path"]
 
         l_hash = None
-        if local_path.is_dir():
+        if local_path.is_symlink():
+            l_type = "symbolic link"
+            l_link = local_path.readlink()
+        elif local_path.is_dir():
             l_type = "directory"
         elif local_path.is_file():
             l_type = "regular file"
@@ -415,15 +418,27 @@ class DiffApp:
                                 ("created", f"{map_file_color(future)} bold"),
                             ),
                         )
-                    self.upload_and_install(
-                        None,
-                        None,
-                        None,
+                    self.install_dir(
                         dest_path,
-                        index + 1,
                         file_mode,
+                    )
+                    return {"r_path": dest_path, "future": future}
+                if l_type == "symbolic link":
+                    future = FileFuture.CREATE
+                    if not self.install:
+                        mp_print(  # pyright: ignore[reportArgumentType]
+                            *self.print_infos,
+                            Text.assemble(
+                                "symbolic link ",
+                                (str(dest_path), "bold"),
+                                " will be ",
+                                ("created", f"{map_file_color(future)} bold"),
+                            ),
+                        )
+                    self.install_symbolic_link(
+                        dest_path,
+                        l_link,  # pyright: ignore[reportPossiblyUnboundVariable]
                         future,
-                        directory=True,
                     )
                     return {"r_path": dest_path, "future": future}
                 if l_size > MAX_DIFF_SIZE:  # pyright: ignore[reportPossiblyUnboundVariable]
@@ -434,7 +449,7 @@ class DiffApp:
                         "file %s it is too heavy, so it won't be displayed",
                         dest_path,
                     )
-                    self.upload_and_install(
+                    self.upload_and_install_file(
                         local_path,
                         l_hash,
                         l_size,  # pyright: ignore[reportPossiblyUnboundVariable]
@@ -459,7 +474,7 @@ class DiffApp:
                                 ("created", f"{map_file_color(future)} bold"),
                             ),
                         )
-                    self.upload_and_install(
+                    self.upload_and_install_file(
                         local_path,
                         l_hash,
                         l_size,  # pyright: ignore[reportPossiblyUnboundVariable]
@@ -494,7 +509,7 @@ class DiffApp:
                         panel=True,
                         subtitle=subtitle,
                     )
-                    self.upload_and_install(
+                    self.upload_and_install_file(
                         local_path,
                         l_hash,
                         l_size,  # pyright: ignore[reportPossiblyUnboundVariable]
@@ -516,7 +531,7 @@ class DiffApp:
                             ("created", f"{map_file_color(future)} bold"),
                         ),
                     )
-                self.upload_and_install(
+                self.upload_and_install_file(
                     None,
                     None,
                     None,
@@ -550,6 +565,56 @@ class DiffApp:
 
             if l_type == "directory":
                 future = FileFuture.KEEP
+                return {"r_path": dest_path, "future": future}
+
+            if l_type == "symbolic link":
+                r_link, stderr = self.connector.exec(
+                    f"readlink {quote(str(dest_path))}"
+                )
+                if stderr:
+                    future = FileFuture.ERROR
+                    mp_log(
+                        logging.ERROR,
+                        *self.print_infos,
+                        "%s",
+                        stderr,
+                    )
+                    return {"r_path": dest_path, "future": future}
+
+                if r_link == str(l_link):  # pyright: ignore[reportPossiblyUnboundVariable]
+                    future = FileFuture.KEEP
+                    mp_log(
+                        logging.INFO,
+                        *self.print_infos,
+                        "symbolic link %s is the same on remote",
+                        dest_path,
+                    )
+                    return {"r_path": dest_path, "future": future}
+
+                future = FileFuture.UPDATE
+                if self.install:
+                    subtitle = Text.assemble(
+                        (str(dest_path), "bold"),
+                    )
+                else:
+                    subtitle = Text.assemble(
+                        "symbolic link ",
+                        (str(dest_path), "bold"),
+                        " will be ",
+                        ("updated", f"{map_file_color(future)} bold"),
+                    )
+                mp_print(  # pyright: ignore[reportArgumentType]
+                    *self.print_infos,
+                    Syntax(
+                        f"< {r_link}\n---\n> {l_link}",  # pyright: ignore[reportPossiblyUnboundVariable]
+                        "diff",
+                        line_numbers=True,
+                        word_wrap=True,
+                    ),
+                    panel=True,
+                    subtitle=subtitle,
+                )
+                self.install_symbolic_link(dest_path, l_link, future)  # pyright: ignore[reportPossiblyUnboundVariable]
                 return {"r_path": dest_path, "future": future}
 
             if r_size == l_size:  # pyright: ignore[reportPossiblyUnboundVariable]
@@ -607,7 +672,7 @@ class DiffApp:
                                 ("modified", f"{map_file_color(future)} bold"),
                             ),
                         )
-                    self.upload_and_install(
+                    self.upload_and_install_file(
                         local_path,
                         l_hash,
                         l_size,  # pyright: ignore[reportPossiblyUnboundVariable]
@@ -654,7 +719,7 @@ class DiffApp:
                                 ("modified", f"{map_file_color(future)} bold"),
                             ),
                         )
-                    self.upload_and_install(
+                    self.upload_and_install_file(
                         local_path,
                         l_hash,
                         l_size,  # pyright: ignore[reportPossiblyUnboundVariable]
@@ -681,7 +746,7 @@ class DiffApp:
                     dest_path,
                 )
 
-            diff = self.upload_and_install(
+            diff = self.upload_and_install_file(
                 local_path,
                 l_hash,
                 l_size,  # pyright: ignore[reportPossiblyUnboundVariable]
@@ -720,7 +785,7 @@ class DiffApp:
     ) -> None:
         l_file = self.root / root
 
-        if not (l_file.is_dir() or l_file.is_file()):
+        if not (l_file.is_dir() or l_file.is_file() or l_file.is_symlink()):
             raise NotImplementedError
 
         r_parent = tree[root.parent]["r_path"] if root.parent in tree else Path("/")
@@ -750,11 +815,11 @@ class DiffApp:
         tree[l_parent / root.name] = {
             "r_path": r_parent / name,  # pyright: ignore[reportOperatorIssue]
             "l_path": l_file,
-            "mode": oct(l_file.stat().st_mode)[-4:],
+            "mode": oct(l_file.stat(follow_symlinks=False).st_mode)[-4:],
             "config": file_config,
         }
 
-        if l_file.is_file():
+        if l_file.is_file() or l_file.is_symlink():
             return
         for file in l_file.iterdir():
             self.gen_files(
@@ -858,7 +923,7 @@ class DiffApp:
         }
         return l_hash
 
-    def upload_and_install(
+    def upload_and_install_file(
         self,
         local_path: Path | None,
         l_hash: str | None,
@@ -867,7 +932,6 @@ class DiffApp:
         current_advancement: int,
         file_mode: str,
         future: FileFuture,
-        directory: bool = False,
         do_upload: bool = False,
         do_diff: bool = False,
         forced: bool = False,
@@ -890,15 +954,10 @@ class DiffApp:
             diff = self.connector.diff_file(dest_path, l_hash)  # pyright: ignore[reportArgumentType]
 
         if self.install:
-            if directory:
-                _, stderr = self.connector.exec(
-                    f"install -m{file_mode} -d {quote(str(dest_path))}"
-                )
-            else:
-                _, stderr = self.connector.exec(
-                    f"install -m{file_mode} {quote(str(source_path))} "  # pyright: ignore[reportPossiblyUnboundVariable]
-                    f"{quote(str(dest_path))}"
-                )
+            _, stderr = self.connector.exec(
+                f"install -m{file_mode} {quote(str(source_path))} "  # pyright: ignore[reportPossiblyUnboundVariable]
+                f"{quote(str(dest_path))}"
+            )
             if stderr:
                 mp_log(
                     logging.WARNING,
@@ -926,3 +985,68 @@ class DiffApp:
                     ),
                 )
         return diff
+
+    def install_dir(
+        self,
+        dest_path: Path,
+        file_mode: str,
+    ) -> None:
+        if self.install:
+            _, stderr = self.connector.exec(
+                f"install -m{file_mode} -d {quote(str(dest_path))}"
+            )
+            if stderr:
+                mp_log(
+                    logging.WARNING,
+                    *self.print_infos,
+                    "directory %s was not created : %s",
+                    dest_path,
+                    stderr,
+                )
+            else:
+                mp_print(  # pyright: ignore[reportArgumentType]
+                    *self.print_infos,
+                    Text.assemble(
+                        "directory ",
+                        (str(dest_path), "bold"),
+                        " ",
+                        ("created", f"{map_file_color(FileFuture.CREATE)} bold"),
+                    ),
+                )
+
+    def install_symbolic_link(
+        self,
+        dest_path: Path,
+        link_to: Path,
+        future: FileFuture,
+    ) -> None:
+        if self.install:
+            _, stderr = self.connector.exec(
+                f"ln -f -s {quote(str(link_to))} {quote(str(dest_path))}"
+            )
+            if stderr:
+                mp_log(
+                    logging.WARNING,
+                    *self.print_infos,
+                    "symbolic link %s was not created : %s",
+                    dest_path,
+                    stderr,
+                )
+            else:
+                match future:
+                    case FileFuture.CREATE:
+                        state = "created"
+                    case FileFuture.UPDATE:
+                        state = "updated"
+                    case _:
+                        raise NotImplementedError
+
+                mp_print(  # pyright: ignore[reportArgumentType]
+                    *self.print_infos,
+                    Text.assemble(
+                        "symbolic link ",
+                        (str(dest_path), "bold"),
+                        " ",
+                        (state, f"{map_file_color(future)} bold"),
+                    ),
+                )

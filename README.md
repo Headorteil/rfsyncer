@@ -322,7 +322,7 @@ $ rfsyncer clear -h
 
 # Good to know
 
-The only file types which are handled are `normal files` and `directories`
+The only file types which are handled are `normal files`, `directories` and `symbolic links`.
 
 When a file (or directory) already exist on the remote host and its content is the same, it will be skipped even if its mode, owner or group are different.
 
@@ -339,6 +339,7 @@ Some binaries are expected to existe on the remote hosts (they are already here 
 - install
 - md5sum
 - mkdir
+- readlink
 - rm
 - sh
 - stat
