@@ -418,10 +418,13 @@ class DiffApp:
                                 ("created", f"{map_file_color(future)} bold"),
                             ),
                         )
-                    self.install_dir(
-                        dest_path,
-                        file_mode,
-                    )
+                    try:
+                        self.install_dir(
+                            dest_path,
+                            file_mode,
+                        )
+                    except HandledError:
+                        return {"r_path": dest_path, "future": FileFuture.ERROR}
                     return {"r_path": dest_path, "future": future}
                 if l_type == "symbolic link":
                     future = FileFuture.CREATE
@@ -435,11 +438,14 @@ class DiffApp:
                                 ("created", f"{map_file_color(future)} bold"),
                             ),
                         )
-                    self.install_symbolic_link(
-                        dest_path,
-                        l_link,  # pyright: ignore[reportPossiblyUnboundVariable]
-                        future,
-                    )
+                    try:
+                        self.install_symbolic_link(
+                            dest_path,
+                            l_link,  # pyright: ignore[reportPossiblyUnboundVariable]
+                            future,
+                        )
+                    except HandledError:
+                        return {"r_path": dest_path, "future": FileFuture.ERROR}
                     return {"r_path": dest_path, "future": future}
                 if l_size > MAX_DIFF_SIZE:  # pyright: ignore[reportPossiblyUnboundVariable]
                     future = FileFuture.CREATE
@@ -449,16 +455,19 @@ class DiffApp:
                         "file %s it is too heavy, so it won't be displayed",
                         dest_path,
                     )
-                    self.upload_and_install_file(
-                        local_path,
-                        l_hash,
-                        l_size,  # pyright: ignore[reportPossiblyUnboundVariable]
-                        dest_path,
-                        index + 1,
-                        file_mode,
-                        future,
-                        forced=True,
-                    )
+                    try:
+                        self.upload_and_install_file(
+                            local_path,
+                            l_hash,
+                            l_size,  # pyright: ignore[reportPossiblyUnboundVariable]
+                            dest_path,
+                            index + 1,
+                            file_mode,
+                            future,
+                            forced=True,
+                        )
+                    except HandledError:
+                        return {"r_path": dest_path, "future": FileFuture.ERROR}
                     return {"r_path": dest_path, "future": future}
                 try:
                     local_content = local_path.read_text()
@@ -474,16 +483,19 @@ class DiffApp:
                                 ("created", f"{map_file_color(future)} bold"),
                             ),
                         )
-                    self.upload_and_install_file(
-                        local_path,
-                        l_hash,
-                        l_size,  # pyright: ignore[reportPossiblyUnboundVariable]
-                        dest_path,
-                        index + 1,
-                        file_mode,
-                        future,
-                        forced=True,
-                    )
+                    try:
+                        self.upload_and_install_file(
+                            local_path,
+                            l_hash,
+                            l_size,  # pyright: ignore[reportPossiblyUnboundVariable]
+                            dest_path,
+                            index + 1,
+                            file_mode,
+                            future,
+                            forced=True,
+                        )
+                    except HandledError:
+                        return {"r_path": dest_path, "future": FileFuture.ERROR}
                     return {"r_path": dest_path, "future": future}
                 if local_content:
                     future = FileFuture.CREATE
@@ -509,16 +521,19 @@ class DiffApp:
                         panel=True,
                         subtitle=subtitle,
                     )
-                    self.upload_and_install_file(
-                        local_path,
-                        l_hash,
-                        l_size,  # pyright: ignore[reportPossiblyUnboundVariable]
-                        dest_path,
-                        index + 1,
-                        file_mode,
-                        future,
-                        forced=True,
-                    )
+                    try:
+                        self.upload_and_install_file(
+                            local_path,
+                            l_hash,
+                            l_size,  # pyright: ignore[reportPossiblyUnboundVariable]
+                            dest_path,
+                            index + 1,
+                            file_mode,
+                            future,
+                            forced=True,
+                        )
+                    except HandledError:
+                        return {"r_path": dest_path, "future": FileFuture.ERROR}
                     return {"r_path": dest_path, "future": future}
                 future = FileFuture.CREATE
                 if not self.install:
@@ -531,16 +546,19 @@ class DiffApp:
                             ("created", f"{map_file_color(future)} bold"),
                         ),
                     )
-                self.upload_and_install_file(
-                    None,
-                    None,
-                    None,
-                    dest_path,
-                    index + 1,
-                    file_mode,
-                    future,
-                    forced=True,
-                )
+                try:
+                    self.upload_and_install_file(
+                        None,
+                        None,
+                        None,
+                        dest_path,
+                        index + 1,
+                        file_mode,
+                        future,
+                        forced=True,
+                    )
+                except HandledError:
+                    return {"r_path": dest_path, "future": FileFuture.ERROR}
                 return {"r_path": dest_path, "future": future}
 
             mp_log(
@@ -672,16 +690,19 @@ class DiffApp:
                                 ("modified", f"{map_file_color(future)} bold"),
                             ),
                         )
-                    self.upload_and_install_file(
-                        local_path,
-                        l_hash,
-                        l_size,  # pyright: ignore[reportPossiblyUnboundVariable]
-                        dest_path,
-                        index + 1,
-                        file_mode,
-                        future,
-                        forced=True,
-                    )
+                    try:
+                        self.upload_and_install_file(
+                            local_path,
+                            l_hash,
+                            l_size,  # pyright: ignore[reportPossiblyUnboundVariable]
+                            dest_path,
+                            index + 1,
+                            file_mode,
+                            future,
+                            forced=True,
+                        )
+                    except HandledError:
+                        return {"r_path": dest_path, "future": FileFuture.ERROR}
                     return {"r_path": dest_path, "future": future}
                 if r_hash == l_hash:
                     future = FileFuture.KEEP
@@ -719,16 +740,19 @@ class DiffApp:
                                 ("modified", f"{map_file_color(future)} bold"),
                             ),
                         )
-                    self.upload_and_install_file(
-                        local_path,
-                        l_hash,
-                        l_size,  # pyright: ignore[reportPossiblyUnboundVariable]
-                        dest_path,
-                        index + 1,
-                        file_mode,
-                        future,
-                        forced=True,
-                    )
+                    try:
+                        self.upload_and_install_file(
+                            local_path,
+                            l_hash,
+                            l_size,  # pyright: ignore[reportPossiblyUnboundVariable]
+                            dest_path,
+                            index + 1,
+                            file_mode,
+                            future,
+                            forced=True,
+                        )
+                    except HandledError:
+                        return {"r_path": dest_path, "future": FileFuture.ERROR}
                     return {"r_path": dest_path, "future": future}
                 mp_log(
                     logging.DEBUG,
@@ -746,17 +770,20 @@ class DiffApp:
                     dest_path,
                 )
 
-            diff = self.upload_and_install_file(
-                local_path,
-                l_hash,
-                l_size,  # pyright: ignore[reportPossiblyUnboundVariable]
-                dest_path,
-                index + 1,
-                file_mode,
-                future,
-                do_upload=True,
-                do_diff=True,
-            )
+            try:
+                diff = self.upload_and_install_file(
+                    local_path,
+                    l_hash,
+                    l_size,  # pyright: ignore[reportPossiblyUnboundVariable]
+                    dest_path,
+                    index + 1,
+                    file_mode,
+                    future,
+                    do_upload=True,
+                    do_diff=True,
+                )
+            except HandledError:
+                return {"r_path": dest_path, "future": FileFuture.ERROR}
 
             if self.install:
                 subtitle = Text.assemble(
@@ -966,24 +993,24 @@ class DiffApp:
                     dest_path,
                     stderr,
                 )
-            else:
-                match future:
-                    case FileFuture.CREATE:
-                        state = "created"
-                    case FileFuture.UPDATE:
-                        state = "updated"
-                    case _:
-                        raise NotImplementedError
+                raise HandledError(stderr)
+            match future:
+                case FileFuture.CREATE:
+                    state = "created"
+                case FileFuture.UPDATE:
+                    state = "updated"
+                case _:
+                    raise NotImplementedError
 
-                mp_print(  # pyright: ignore[reportArgumentType]
-                    *self.print_infos,
-                    Text.assemble(
-                        "file ",
-                        (str(dest_path), "bold"),
-                        " ",
-                        (state, f"{map_file_color(future)} bold"),
-                    ),
-                )
+            mp_print(  # pyright: ignore[reportArgumentType]
+                *self.print_infos,
+                Text.assemble(
+                    "file ",
+                    (str(dest_path), "bold"),
+                    " ",
+                    (state, f"{map_file_color(future)} bold"),
+                ),
+            )
         return diff
 
     def install_dir(
@@ -1003,16 +1030,16 @@ class DiffApp:
                     dest_path,
                     stderr,
                 )
-            else:
-                mp_print(  # pyright: ignore[reportArgumentType]
-                    *self.print_infos,
-                    Text.assemble(
-                        "directory ",
-                        (str(dest_path), "bold"),
-                        " ",
-                        ("created", f"{map_file_color(FileFuture.CREATE)} bold"),
-                    ),
-                )
+                raise HandledError(stderr)
+            mp_print(  # pyright: ignore[reportArgumentType]
+                *self.print_infos,
+                Text.assemble(
+                    "directory ",
+                    (str(dest_path), "bold"),
+                    " ",
+                    ("created", f"{map_file_color(FileFuture.CREATE)} bold"),
+                ),
+            )
 
     def install_symbolic_link(
         self,
@@ -1032,21 +1059,21 @@ class DiffApp:
                     dest_path,
                     stderr,
                 )
-            else:
-                match future:
-                    case FileFuture.CREATE:
-                        state = "created"
-                    case FileFuture.UPDATE:
-                        state = "updated"
-                    case _:
-                        raise NotImplementedError
+                raise HandledError(stderr)
+            match future:
+                case FileFuture.CREATE:
+                    state = "created"
+                case FileFuture.UPDATE:
+                    state = "updated"
+                case _:
+                    raise NotImplementedError
 
-                mp_print(  # pyright: ignore[reportArgumentType]
-                    *self.print_infos,
-                    Text.assemble(
-                        "symbolic link ",
-                        (str(dest_path), "bold"),
-                        " ",
-                        (state, f"{map_file_color(future)} bold"),
-                    ),
-                )
+            mp_print(  # pyright: ignore[reportArgumentType]
+                *self.print_infos,
+                Text.assemble(
+                    "symbolic link ",
+                    (str(dest_path), "bold"),
+                    " ",
+                    (state, f"{map_file_color(future)} bold"),
+                ),
+            )
