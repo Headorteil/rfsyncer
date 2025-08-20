@@ -51,6 +51,17 @@ def main(
             help="Config path",
         ),
     ] = DEFAULT_CONFIG_FILE,
+    dotenv_file: Annotated[
+        Path,
+        typer.Option(
+            "--dotenv",
+            "-e",
+            file_okay=True,
+            readable=True,
+            resolve_path=True,
+            help="Dotenv path",
+        ),
+    ] = Path(".env"),
     verbosity: Annotated[
         int,
         typer.Option(
@@ -153,7 +164,7 @@ def main(
     logger = get_logger(console, verbosity, debug)
 
     try:
-        config = RfsyncerConfig(logger, config_path, flag)
+        config = RfsyncerConfig(logger, config_path, flag, dotenv_file)
         config.init_config()
     except HandledError as e:
         logger.critical(e)

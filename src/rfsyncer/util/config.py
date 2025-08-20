@@ -3,7 +3,7 @@ import os
 from logging import Logger
 from pathlib import Path
 
-from dotenv import load_dotenv
+from dotenv import dotenv_values
 from jinja2 import Environment
 from yaml import safe_load
 
@@ -16,7 +16,9 @@ from rfsyncer.util.exceptions import HandledError
 
 
 class RfsyncerConfig:
-    def __init__(self, logger: Logger, config_path: Path, flag: str) -> None:
+    def __init__(
+        self, logger: Logger, config_path: Path, flag: str, dotenv_file: Path
+    ) -> None:
         self.config_path = config_path.resolve()
         self.__logger = logger
 
@@ -27,8 +29,8 @@ class RfsyncerConfig:
             self.flag = json.loads(flag)
         else:
             self.flag = {}
-        load_dotenv()
-        self.env = os.environ
+        self.env = os.environ.copy()
+        self.env.update(dotenv_values(dotenv_file))  # pyright: ignore[reportArgumentType, reportCallIssue]
 
         if (
             self.config_path != DEFAULT_CONFIG_FILE.resolve()
