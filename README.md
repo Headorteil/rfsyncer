@@ -325,16 +325,21 @@ $ rfsyncer clear -h
 
 Rfsyncer can easily be combined with tools such as [vals](https://github.com/helmfile/vals)
 
-config.yml :
+secrets.yml :
 ```yaml
-general:
-  my_secret: ref+vault://secret/rfsyncer#MY_SECRET
-
-hosts:
-  host1: {}
+HOST_PASSWORD: ref+vault://secret/rfsyncer#MY_SECRET
 ```
 
-`cat config.yml | vals eval -f - | rfsyncer --config - diff`
+config.yml :
+```yaml
+hosts:
+  host1:
+    sudo: True
+    password: {{ env.HOST_PASSWORD }}
+  host2: {}
+```
+
+`vals exec -i -f secrets.yml -- rfsyncer diff`
 
 
 # Good to know
