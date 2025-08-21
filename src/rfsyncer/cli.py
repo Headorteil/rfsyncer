@@ -45,10 +45,7 @@ def main(
         typer.Option(
             "--config",
             "-c",
-            file_okay=True,
-            readable=True,
-            resolve_path=True,
-            help="Config path",
+            help="Config path (or - for stdin)",
         ),
     ] = DEFAULT_CONFIG_FILE,
     dotenv_file: Annotated[

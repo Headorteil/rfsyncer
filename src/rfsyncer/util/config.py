@@ -1,5 +1,6 @@
 import json
 import os
+import sys
 from logging import Logger
 from pathlib import Path
 
@@ -19,7 +20,7 @@ class RfsyncerConfig:
     def __init__(
         self, logger: Logger, config_path: Path, flag: str, dotenv_file: Path
     ) -> None:
-        self.config_path = config_path.resolve()
+        self.config_path = config_path
         self.__logger = logger
 
         self.log_file = DEFAULT_LOG_FILE
@@ -35,6 +36,7 @@ class RfsyncerConfig:
         if (
             self.config_path != DEFAULT_CONFIG_FILE.resolve()
             and not self.config_path.is_file()
+            and str(self.config_path) != "-"
         ):
             errmsg = "Config file is not default and does not exist"
             raise HandledError(errmsg)
@@ -42,9 +44,13 @@ class RfsyncerConfig:
     def init_config(self) -> None:
         """Return the config."""
 
-        if self.config_path.is_file():
+        if self.config_path.is_file() or str(self.config_path) == "-":
+            if self.config_path.is_file():
+                config_content = self.config_path.read_text()
+            else:
+                config_content = sys.stdin.read()
             env = Environment()  # noqa: S701
-            template = env.from_string(self.config_path.read_text())
+            template = env.from_string(config_content)
             template_out = template.render(env=self.env, flag=self.flag)
 
             raw_config = safe_load(template_out)

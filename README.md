@@ -198,7 +198,7 @@ $ rfsyncer -h
 
 
 ╭─ Options ───────────────────────────────────────────────────────────────────────────────────────────╮
-│ --config              -c      PATH     Config path [default: config.yml]                            │
+│ --config              -c      PATH     Config path (or - for stdin) [default: config.yml]           │
 │ --dotenv              -e      PATH     Dotenv path [default: .env]                                  │
 │ --processes           -p      INTEGER  Number of processes to pop [default: 4]                      │
 │ --flag                -f      TEXT     json to pass to templating engines                           │
