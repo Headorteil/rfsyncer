@@ -321,6 +321,22 @@ $ rfsyncer clear -h
 ╰─────────────────────────────────────────────────────────────────────────────────────────────────────╯
 ```
 
+# Vault usage
+
+Rfsyncer can easily be combined with tools such as [vals](https://github.com/helmfile/vals)
+
+config.yml :
+```yaml
+general:
+  my_secret: ref+vault://secret/rfsyncer#MY_SECRET
+
+hosts:
+  host1: {}
+```
+
+`cat config.yml | vals eval -f - | rfsyncer --config - diff`
+
+
 # Good to know
 
 The only file types which are handled are `normal files`, `directories` and `symbolic links`.
