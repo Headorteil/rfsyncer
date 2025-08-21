@@ -79,7 +79,9 @@ class DiffApp:
         self.task = task
         self.file_task = file_task
 
-        self.jinja_env = Environment(loader=FileSystemLoader(self.root.parent))  # noqa: S701
+        self.jinja_env = Environment(  # noqa: S701
+            loader=FileSystemLoader(self.root.parent), keep_trailing_newline=True
+        )
         self.hook = {}
         self.print_infos = (
             self.queue,
