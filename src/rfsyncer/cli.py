@@ -244,6 +244,9 @@ def install(
         typer.Option(
             "--root",
             "-r",
+            exists=True,
+            dir_okay=True,
+            readable=True,
             help="Root path on wich make diff",
         ),
     ] = Path("./root"),
@@ -305,6 +308,9 @@ def diff(
         typer.Option(
             "--root",
             "-r",
+            exists=True,
+            dir_okay=True,
+            readable=True,
             help="Root path on wich make diff",
         ),
     ] = Path("./root"),

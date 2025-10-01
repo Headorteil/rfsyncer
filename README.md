@@ -198,7 +198,7 @@ $ rfsyncer -h
 
 
 ╭─ Options ───────────────────────────────────────────────────────────────────────────────────────────╮
-│ --config              -c      PATH     Config path (or - for stdin) [default: config.yml]           │
+│ --config              -c      PATH     Config path (or - for stdin) [default: rfsyncer.yml]         │
 │ --dotenv              -e      PATH     Dotenv path [default: .env]                                  │
 │ --processes           -p      INTEGER  Number of processes to pop [default: 4]                      │
 │ --flag                -f      TEXT     json to pass to templating engines                           │
@@ -330,7 +330,7 @@ secrets.yml :
 HOST_PASSWORD: ref+vault://secret/rfsyncer#MY_SECRET
 ```
 
-config.yml :
+rfsyncer.yml :
 ```yaml
 hosts:
   host1:

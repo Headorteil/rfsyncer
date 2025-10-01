@@ -9,7 +9,6 @@ from jinja2 import Environment
 from yaml import safe_load
 
 from rfsyncer.util.consts import (
-    DEFAULT_CONFIG_FILE,
     DEFAULT_LOG_DIR,
     DEFAULT_LOG_FILE,
 )
@@ -33,12 +32,8 @@ class RfsyncerConfig:
         self.env = os.environ.copy()
         self.env.update(dotenv_values(dotenv_file))  # pyright: ignore[reportArgumentType, reportCallIssue]
 
-        if (
-            self.config_path != DEFAULT_CONFIG_FILE.resolve()
-            and not self.config_path.is_file()
-            and str(self.config_path) != "-"
-        ):
-            errmsg = "Config file is not default and does not exist"
+        if not self.config_path.is_file() and str(self.config_path) != "-":
+            errmsg = "Config file does not exist"
             raise HandledError(errmsg)
 
     def init_config(self) -> None:
