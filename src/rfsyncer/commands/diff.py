@@ -832,8 +832,9 @@ class DiffApp:
                     host=self.host_config,
                     general=self.general_config,
                     hook=self.hook,
-                )
-                file_config.update(yaml.safe_load(template_out))
+                ).strip()
+                if template_out:
+                    file_config.update(yaml.safe_load(template_out))
 
         if not file_config["enabled"]:
             return
