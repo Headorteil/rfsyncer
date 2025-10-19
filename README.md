@@ -145,9 +145,24 @@ The pre hooks are templatized withe the following values :
 For example :
 
 ```jinja2
+#! /bin/bash
+
 {% if host.real_hostname == "zozo" %}
 uname -m
 {% endif %}
+
+{% set ns = namespace(found_update=false) -%}
+{%- for path, info in paths.items() -%}
+  {%- if info.remote_path.startswith("/root/Docker/") and info.state == "update" -%}
+    {%- set ns.found_update = true -%}
+  {%- endif -%}
+{%- endfor -%}
+
+{%- if ns.found_update -%}
+pushd /root/Docker
+docker compose down
+docker compose up -d
+{%- endif -%}
 ```
 
 ### Post hooks
