@@ -29,6 +29,6 @@ RFSYNCER_PREFIX = "rfsyncer"
 REMOTE_TEMP_DIR = Path("/tmp/rfsyncer")
 BUF_SIZE = 65536
 MAX_DIFF_SIZE = 10_000_000
-DEFAULT_FILE_CONFIG = {"enabled": True, "name": None}
+DEFAULT_FILE_CONFIG = {"enabled": True, "name": None, "strict": False}
 
 ASKPASS_PATH = Path("/tmp/rfsyncer_askpass.sh")

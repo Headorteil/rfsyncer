@@ -5,6 +5,7 @@ class FileFuture(StrEnum):
     CREATE = auto()
     UPDATE = auto()
     KEEP = auto()
+    DELETE = auto()
     NA = "n/a"
     ERROR = auto()
 
@@ -12,6 +13,7 @@ class FileFuture(StrEnum):
 CREATE_COLOR = "green"
 UPDATE_COLOR = "orange3"
 KEEP_COLOR = "chartreuse1"
+DELETE_COLOR = "dark_blue"
 NA_COLOR = "grey53"
 ERROR_COLOR = "red"
 
@@ -24,6 +26,8 @@ def map_file_color(future: FileFuture) -> str:
             return UPDATE_COLOR
         case FileFuture.KEEP:
             return KEEP_COLOR
+        case FileFuture.DELETE:
+            return DELETE_COLOR
         case FileFuture.NA:
             return NA_COLOR
         case FileFuture.ERROR:

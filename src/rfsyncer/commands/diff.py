@@ -312,7 +312,9 @@ class DiffApp:
             ) as local_tmpdir:
                 self.hook = self.pre_hooks(local_tmpdir)
                 for i, (path, path_dict) in enumerate(tree.items()):
-                    return_paths[path] = self.diff_file(i, path_dict, local_tmpdir)
+                    return_paths[path] = self.diff_file(
+                        i, path_dict, local_tmpdir, return_paths
+                    )
                 self.post_hooks(local_tmpdir, return_paths)
 
             self.return_dict[self.host] = {
@@ -347,7 +349,11 @@ class DiffApp:
                 }
 
     def diff_file(
-        self, index: int, path_dict: dict[str, Any], local_tmpdir: str
+        self,
+        index: int,
+        path_dict: dict[str, Any],
+        local_tmpdir: str,
+        return_paths: dict[Path, dict[str, Any]],
     ) -> dict[str, Any]:
         file_mode = path_dict["mode"]
         file_config = path_dict["config"]
@@ -584,6 +590,8 @@ class DiffApp:
                 return {"r_path": dest_path, "future": future}
 
             if l_type == "directory":
+                if file_config.get("strict"):
+                    self.diff_strict_dir(dest_path, path_dict, return_paths)
                 future = FileFuture.KEEP
                 return {"r_path": dest_path, "future": future}
 
@@ -807,6 +815,105 @@ class DiffApp:
 
             return {"r_path": dest_path, "future": future}
 
+    def diff_strict_dir(
+        self,
+        dest_path: Path,
+        path_dict: dict[str, Any],
+        return_paths: dict[Path, dict[str, Any]],
+    ) -> None:
+        expected_children = path_dict["strict_children"]
+
+        try:
+            entries = self.sftp.listdir(str(dest_path))
+        except FileNotFoundError:
+            return
+        except PermissionError:
+            mp_log(
+                logging.WARNING,
+                *self.print_infos,
+                "Could not list strict directory %s : Permission denied",
+                dest_path,
+            )
+            return
+
+        for name in entries:
+            if name in expected_children:
+                continue
+            extra_path = dest_path / name
+            try:
+                _, r_type = self.connector.stat(extra_path)
+            except FileNotFoundError:
+                continue
+            except PermissionError:
+                mp_log(
+                    logging.WARNING,
+                    *self.print_infos,
+                    "You do not have sufficient rights to read %s",
+                    extra_path,
+                )
+                continue
+            if r_type == "directory":
+                r_type = "d"
+            elif r_type == "symbolic link":
+                r_type = "l"
+            else:
+                r_type = "f"
+            self.delete_remote_file(
+                extra_path,
+                r_type,
+                return_paths,
+            )
+
+    def delete_remote_file(
+        self,
+        dest_path: Path,
+        r_type: str,
+        return_paths: dict[Path, dict[str, Any]],
+    ) -> None:
+        future = FileFuture.DELETE
+
+        if r_type == "d":
+            kind = "directory"
+        elif r_type == "l":
+            kind = "symbolic link"
+        else:
+            kind = "file"
+
+        state = "deleted" if self.install else "will be deleted"
+        mp_print(  # pyright: ignore[reportArgumentType]
+            *self.print_infos,
+            Text.assemble(
+                f"{kind} ",
+                (str(dest_path), "bold"),
+                f" {state}",
+                (f" {future}", f"{map_file_color(future)} bold"),
+            ),
+        )
+
+        if self.install:
+            rm_command = "rm -rf" if r_type == "d" else "rm -f"
+            _, stderr = self.connector.exec(f"{rm_command} {quote(str(dest_path))}")
+            if stderr:
+                future = FileFuture.ERROR
+                mp_log(
+                    logging.WARNING,
+                    *self.print_infos,
+                    "%s %s was not deleted : %s",
+                    kind,
+                    dest_path,
+                    stderr,
+                )
+            else:
+                mp_log(
+                    logging.INFO,
+                    *self.print_infos,
+                    "%s %s was deleted",
+                    kind,
+                    dest_path,
+                )
+
+        return_paths[dest_path] = {"r_path": dest_path, "future": future}
+
     def gen_files(
         self,
         root: Path,
@@ -842,12 +949,19 @@ class DiffApp:
         if file_config["name"]:
             name = file_config["name"]
 
-        tree[l_parent / root.name] = {
-            "r_path": r_parent / name,  # pyright: ignore[reportOperatorIssue]
+        r_path = r_parent / name  # pyright: ignore[reportOperatorIssue]
+        tree_entry = {
+            "r_path": r_path,
             "l_path": l_file,
             "mode": oct(l_file.stat(follow_symlinks=False).st_mode)[-4:],
             "config": file_config,
         }
+        if file_config.get("strict") and not l_file.is_symlink() and l_file.is_dir():
+            tree_entry["strict_children"] = set()
+        tree[l_parent / root.name] = tree_entry
+
+        if root.parent in tree and "strict_children" in tree[root.parent]:
+            tree[root.parent]["strict_children"].add(r_path.name)
 
         if l_file.is_file() or l_file.is_symlink():
             return

@@ -98,9 +98,13 @@ enabled: false # Determines if the file should be taken into account (default : 
 templating: j2 # Enable jinja templating for the related file (default : no templating)
 {% endif %}
 name: dir-{{ host.host_key2 }} # If provided, will replace the original name of the file. It can even be a path.
+strict: true # Only for directories : ensures the remote directory only contains the files present in the rfsyncer tree, the others will be deleted (default : false)
 ```
 
 > The name field can be very powerfull, especially for directories as it will impact all their childs which will follow the new path of their parent.
+
+> [!CAUTION]
+> With `strict: true` on a directory, the remote files which are not part of the rfsyncer tree are deleted with the install command. The diff command only displays them.
 
 ## Normal files
 
@@ -186,7 +190,7 @@ The post hooks are templatized withe the following values :
 {
   "<local path relative to the root flag>":
     {
-      "state": "<create|update|keep|error>",
+      "state": "<create|update|keep|delete|error>",
       "remote_path": "<absolute remote path>"
     }
 }
