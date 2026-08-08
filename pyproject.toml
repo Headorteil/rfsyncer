@@ -63,7 +63,9 @@ ignore = [
   "PLR0912", # Too many branches
   "PLR0913", # Too many args
   "PLR0915", # Too many statements
+  "PLR0917", # Too many args
+  "PLR2004", # Magic values
   "C901",    # Too many branches
   "S108",    # Usage of tempfiles
-  "PLR2004", # Magic values
+  "CPY001",  # Copyright
 ]

@@ -251,8 +251,10 @@ class Syncer:
             host_str = Text.assemble(
                 "[",
                 (
-                    f"{host_vals['hostname']} "
-                    f"{host_vals['user']}@{host_vals['real_hostname']}",
+                    (
+                        f"{host_vals['hostname']} "
+                        f"{host_vals['user']}@{host_vals['real_hostname']}"
+                    ),
                     HOST_COLOR,
                 ),
                 "]",

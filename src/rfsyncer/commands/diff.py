@@ -904,17 +904,6 @@ class DiffApp:
         else:
             kind = "file"
 
-        state = "deleted" if self.install else "will be deleted"
-        mp_print(  # pyright: ignore[reportArgumentType]
-            *self.print_infos,
-            Text.assemble(
-                f"{kind} ",
-                (str(dest_path), "bold"),
-                f" {state}",
-                (f" {future}", f"{map_file_color(future)} bold"),
-            ),
-        )
-
         if self.install:
             rm_command = "rm -rf" if r_type == "d" else "rm -f"
             _, stderr = self.connector.exec(f"{rm_command} {quote(str(dest_path))}")
@@ -929,13 +918,25 @@ class DiffApp:
                     stderr,
                 )
             else:
-                mp_log(
-                    logging.INFO,
+                mp_print(  # pyright: ignore[reportArgumentType]
                     *self.print_infos,
-                    "%s %s was deleted",
-                    kind,
-                    dest_path,
+                    Text.assemble(
+                        f"{kind} ",
+                        (str(dest_path), "bold"),
+                        " ",
+                        ("deleted", f"{map_file_color(future)} bold"),
+                    ),
                 )
+        else:
+            mp_print(  # pyright: ignore[reportArgumentType]
+                *self.print_infos,
+                Text.assemble(
+                    f"{kind} ",
+                    (str(dest_path), "bold"),
+                    " will be ",
+                    ("deleted", f"{map_file_color(future)} bold"),
+                ),
+            )
 
         return_paths[dest_path] = {"r_path": dest_path, "future": future}
 
