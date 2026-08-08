@@ -69,7 +69,7 @@ class DiffApp:
         self.host = host
         self.insecure = insecure
         self.sudo = sudo
-        self.root = root
+        self.root = root.resolve()
 
         self.keep = keep
         self.upload = upload
@@ -89,6 +89,16 @@ class DiffApp:
             None,
             None,
         )
+
+    def resolve_hook_path(self, hook: dict[str, Any]) -> Path:
+        hook_path = hook.get("path")
+        if not hook_path:
+            return Path()
+        hook_path = Path(hook_path)
+        config_path = self.config.config_path
+        if hook_path.is_absolute() or str(config_path) == "-":
+            return hook_path
+        return config_path.parent / hook_path
 
     def connect(self) -> None:
         self.connector = ping(
@@ -130,7 +140,7 @@ class DiffApp:
         env = Environment()  # noqa: S701
         tmpdir_path = Path(local_tmpdir)
         for hook in hooks:
-            hook_path = Path(hook.get("path"))
+            hook_path = self.resolve_hook_path(hook)
             hook_name = hook.get("name")
             if not hook_path or not hook_name:
                 errmsg = "Evry hook must have a 'path' and 'name' field"
@@ -207,7 +217,7 @@ class DiffApp:
         env = Environment()  # noqa: S701
         tmpdir_path = Path(local_tmpdir)
         for hook in hooks:
-            hook_path = Path(hook.get("path"))
+            hook_path = self.resolve_hook_path(hook)
             hook_name = hook.get("name")
             if not hook_path or not hook_name:
                 errmsg = "Evry hook must have a 'path' and 'name' field"
@@ -360,7 +370,9 @@ class DiffApp:
 
         if file_config.get("templating") == "j2":
             real_local_path = path_dict["l_path"]
-            template = self.jinja_env.get_template(str(real_local_path))
+            template = self.jinja_env.get_template(
+                str(real_local_path.relative_to(self.root.parent))
+            )
             template_out = template.render(
                 host=self.host_config,
                 general=self.general_config,
@@ -934,7 +946,9 @@ class DiffApp:
                 return
             conf_file = l_file.parent / f"{l_file.name}.{RFSYNCER_PREFIX}"
             if conf_file.is_file():
-                template = self.jinja_env.get_template(str(conf_file))
+                template = self.jinja_env.get_template(
+                    str(conf_file.relative_to(self.root.parent))
+                )
                 template_out = template.render(
                     host=self.host_config,
                     general=self.general_config,
