@@ -807,6 +807,19 @@ class DiffApp:
             except HandledError:
                 return {"r_path": dest_path, "future": FileFuture.ERROR}
 
+            if diff.startswith("Binary files") and diff.endswith("differ"):
+                if not self.install:
+                    mp_print(  # pyright: ignore[reportArgumentType]
+                        *self.print_infos,
+                        Text.assemble(
+                            "file (binary) ",
+                            (str(dest_path), "bold"),
+                            " will be ",
+                            ("updated", f"{map_file_color(future)} bold"),
+                        ),
+                    )
+                return {"r_path": dest_path, "future": future}
+
             if self.install:
                 subtitle = Text.assemble(
                     (str(dest_path), "bold"),
