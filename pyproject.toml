@@ -1,6 +1,6 @@
 [project]
 name = "rfsyncer"
-version = "0.0.13"
+version = "0.0.14"
 description = "A symple tool to make diffs and synchronize file trees."
 readme = "README.md"
 authors = [
@@ -10,11 +10,11 @@ requires-python = ">=3.13"
 license = "MIT"
 dependencies = [
     "jinja2>=3.1.6",
-    "paramiko>=3.5.1",
-    "python-dotenv>=1.1.1",
+    "paramiko>=5.1.0",
+    "python-dotenv>=1.2.4",
     "pyyaml>=6.0.2",
     "rich>=14.0.0",
-    "typer>=0.16.0",
+    "typer>=0.27.3",
 ]
 
 [project.scripts]
@@ -29,9 +29,9 @@ build-backend = "uv_build"
 
 [dependency-groups]
 dev = [
-    "pre-commit>=4.2.0",
-    "pyright>=1.1.403",
-    "ruff>=0.12.2",
+    "pre-commit>=4.7.0",
+    "pyright>=1.1.414",
+    "ruff>=0.17.2",
 ]
 
 [tool.pyright]
